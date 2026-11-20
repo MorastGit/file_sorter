@@ -1,4 +1,3 @@
-"""Тесты на временных папках (pytest): правила, сканер, конфликты, лог, откат."""
 import sys
 from pathlib import Path
 

@@ -1,19 +1,16 @@
-"""Человекочитаемый журнал log.txt: что, куда и когда перемещено.
 
-Ротация: при превышении MAX_LINES файл обрезается до последних KEEP_LINES строк.
-"""
 from datetime import datetime
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 LOG_FILE = BASE_DIR / "log.txt"
 
-MAX_LINES = 1000   # лимит строк журнала
-KEEP_LINES = 500   # сколько последних строк оставляем после обрезки
+MAX_LINES = 1000  
+KEEP_LINES = 500   
 
 
 def _trim(path):
-    """Обрезка журнала: больше MAX_LINES -> остаются последние KEEP_LINES."""
+    # обрезка логов
     try:
         if path.stat().st_size == 0:
             return
@@ -23,7 +20,7 @@ def _trim(path):
             with path.open("w", encoding="utf-8") as f:
                 f.writelines(lines[-KEEP_LINES:])
     except OSError:
-        pass  # проблемы с обрезкой не должны ломать запись
+        pass
 
 
 def _write(msg, path=LOG_FILE):
@@ -46,5 +43,4 @@ def log_info(msg, path=LOG_FILE):
 
 
 def clear(path=LOG_FILE):
-    """Удаляет журнал целиком."""
     Path(path).unlink(missing_ok=True)

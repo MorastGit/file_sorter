@@ -1,13 +1,10 @@
-"""Ядро сортировки: сопоставление файла с правилом и перемещение.
 
-Модуль не знает ни про консоль, ни про GUI — его вызывают оба интерфейса.
-"""
 import shutil
 from pathlib import Path
 
 
+# гет правило по расширению файла нон регистр
 def match_rule(file_path, config):
-    """Возвращает правило по расширению (регистронезависимо) или None."""
     ext = Path(file_path).suffix.lower()
     if not ext:
         return None
@@ -17,16 +14,16 @@ def match_rule(file_path, config):
     return None
 
 
+ # гет путь назначения по правилу и базовой папке
 def resolve_target(rule, base_dir):
-    """Абсолютный путь цели: абсолютный target как есть, относительный — от папки-источника."""
     t = Path(str(rule["target"])).expanduser()
     if not t.is_absolute():
         t = Path(base_dir) / t
     return t
 
 
+# обрбаотчник конфликта имен
 def unique_path(dst):
-    """Конфликт имён: не перезаписывать, добавлять суффикс ' (1)', ' (2)' и т.д."""
     if not dst.exists():
         return dst
     stem, suffix = dst.stem, dst.suffix
@@ -39,7 +36,6 @@ def unique_path(dst):
 
 
 def plan_sort(files, sources, config):
-    """План сортировки: [{src, dst_dir, rule}] + файлы без правила."""
     bases = [Path(s).expanduser().resolve() for s in sources]
     ops, skipped = [], []
     for f in files:
@@ -53,19 +49,23 @@ def plan_sort(files, sources, config):
     return ops, skipped
 
 
+# проверка на опасность перемещения в корень ФС макос ридонли 
 def unsafe_target(dst_dir):
-    """Путь первого уровня от корня ('/', '/Documents', 'C:\\') — туда нельзя писать."""
     p = Path(dst_dir)
     return p.is_absolute() and len(p.parts) <= 2
 
 
+
+
+#  само перемещение
 def execute(ops):
-    """Выполняет перемещения. Возвращает (перемещено, ошибки). Ошибки не прерывают работу."""
     moved, errors = [], []
     for op in ops:
         src, dst_dir = Path(op["src"]), Path(op["dst_dir"])
+
+
+        # защита от говноправил
         if unsafe_target(dst_dir):
-            # защита от испорченных правил: корень ФС read-only (macOS) или опасен
             msg = f"небезопасная цель '{dst_dir}' (путь первого уровня от корня) — перемещение отклонено"
             errors.append({"file": str(src), "error": msg})
             continue
@@ -74,6 +74,7 @@ def execute(ops):
             dst = unique_path(dst_dir / src.name)
             shutil.move(str(src), str(dst))
             moved.append({"from": str(src), "to": str(dst), "rule": op.get("rule", "")})
-        except Exception as e:  # файл занят, нет прав и т.п. — пишем и продолжаем
+        
+        except Exception as e:  # файл занят  нет прав и тд
             errors.append({"file": str(src), "error": str(e)})
     return moved, errors

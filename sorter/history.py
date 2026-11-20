@@ -1,4 +1,3 @@
-"""Машиночитаемый журнал операций (history.json) — основа отката."""
 import json
 from datetime import datetime
 from pathlib import Path
@@ -8,7 +7,10 @@ from .engine import unique_path
 BASE_DIR = Path(__file__).resolve().parent.parent
 HISTORY_FILE = BASE_DIR / "history.json"
 
-MAX_SESSIONS = 20  # сколько последних сессий храним (откату нужна только последняя)
+MAX_SESSIONS = 20 
+
+
+
 
 
 def load_history(path=HISTORY_FILE):
@@ -23,10 +25,6 @@ def load_history(path=HISTORY_FILE):
 
 
 def record_session(moved, path=HISTORY_FILE):
-    """Каждая сессия сортировки — атомарная транзакция «откуда → куда».
-
-    Ротация: хранятся только последние MAX_SESSIONS сессий.
-    """
     path = Path(path)
     sessions = load_history(path)
     session = {
@@ -34,6 +32,7 @@ def record_session(moved, path=HISTORY_FILE):
         "timestamp": datetime.now().isoformat(timespec="seconds"),
         "operations": moved,
     }
+
     sessions.append(session)
     sessions = sessions[-MAX_SESSIONS:]
     path.write_text(json.dumps(sessions, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -41,7 +40,7 @@ def record_session(moved, path=HISTORY_FILE):
 
 
 def undo_last(path=HISTORY_FILE):
-    """Откат последней сортировки. Файлы не перезаписываются: конфликт — суффикс ' (1)'."""
+    #  откал ласт сорт
     path = Path(path)
     sessions = load_history(path)
     if not sessions:
@@ -50,8 +49,10 @@ def undo_last(path=HISTORY_FILE):
     result = {"restored": [], "renamed": [], "skipped": []}
     for op in reversed(session.get("operations", [])):
         src, dst = Path(op["from"]), Path(op["to"])
+
+
         if not dst.exists():
-            # файл удалён/перемещён вручную — пропускаем с предупреждением
+            # при удалении файла или если он перемещн польщователем 
             result["skipped"].append(str(dst))
             continue
         if src.exists():
@@ -66,5 +67,4 @@ def undo_last(path=HISTORY_FILE):
 
 
 def clear(path=HISTORY_FILE):
-    """Полная очистка истории (откат будет недоступен, пока не пройдёт новая сортировка)."""
     Path(path).write_text("[]", encoding="utf-8")

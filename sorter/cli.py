@@ -1,4 +1,3 @@
-"""Интерактивный консольный диалог (фаза 1). GUI позже вызывает те же модули ядра."""
 import time
 from pathlib import Path
 
@@ -12,7 +11,6 @@ from .scanner import scan
 
 
 def choose_profile():
-    """Выбор профиля правил rules-*.json при старте (если есть)."""
     profiles = rules_mod.find_profiles()
     if not profiles:
         return rules_mod.RULES_FILE
@@ -33,8 +31,10 @@ def show_rules(config):
         print(f"  {rule['name']}: {exts} -> {rule['target']}")
 
 
+
+
+
 def edit_rules(config, rules_path):
-    """Редактор правил: цикл до Enter, удаление по номеру, сброс и набор по умолчанию."""
     while True:
         show_rules(config)
         if not config.get("rules"):
@@ -99,7 +99,6 @@ def edit_rules(config, rules_path):
 
 
 def ask_sources(config):
-    """Папки-источники; пустой ввод -> папка по умолчанию из правил."""
     raw = input("\nПапки для сортировки через запятую (Enter — по умолчанию): ").strip()
     if raw:
         sources = [s.strip() for s in raw.split(",") if s.strip()]
@@ -108,8 +107,8 @@ def ask_sources(config):
     return [s for s in sources if Path(s).expanduser().is_dir()]
 
 
+#  демонка перед перемещнием
 def preview(ops, skipped):
-    """Показывает план до реального перемещения."""
     print(f"\nПлан: будет перемещено {len(ops)} файл(ов).")
     by_dir = {}
     for op in ops:
@@ -123,8 +122,9 @@ def preview(ops, skipped):
               (" ..." if len(skipped) > 5 else ""))
 
 
+
+
 def report_scan_errors(errors):
-    """Диагностика: macOS может закрыть папку (Загрузки/Документы) для терминала."""
     if errors:
         print("\nПроблемы доступа:")
         for e in errors:
@@ -134,14 +134,16 @@ def report_scan_errors(errors):
         print("  программе Terminal / iTerm / своей IDE и запустите сортировщик заново.")
 
 
+
+
 def sort_once(config, sources, auto=False):
-    """Одна сессия сортировки: план -> подтверждение -> перемещение -> журнал."""
     errors = []
     files = scan(sources, config, errors=errors)
     report_scan_errors(errors)
     if not files:
         print("Файлов для сортировки не найдено.")
         return
+
     ops, skipped = plan_sort(files, sources, config)
     preview(ops, skipped)
     if not ops:
@@ -151,7 +153,9 @@ def sort_once(config, sources, auto=False):
         if answer != "y":
             print("Отменено.")
             return
+        
     moved, errors = execute(ops)
+    #  В ЛОГИ
     for op in moved:
         log_move(op["from"], op["to"])
     for err in errors:
@@ -164,14 +168,15 @@ def sort_once(config, sources, auto=False):
         print(f"  Ошибка: {err['file']} — {err['error']}")
 
 
+# автоматическая сортировка в НАБЛЮДАЕТЕЛЕ
 def run_session(files, sources, config, label=""):
-    """Перемещение готового списка файлов без подтверждения (для режима наблюдения)."""
     ops, skipped = plan_sort(files, sources, config)
     moved, errors = execute(ops)
     for op in moved:
         log_move(op["from"], op["to"])
     for err in errors:
         log_error(f"{err['file']}: {err['error']}")
+
     if moved:
         record_session(moved)
     if moved or errors or label:
@@ -179,8 +184,9 @@ def run_session(files, sources, config, label=""):
     return moved, skipped
 
 
+
+#  наблддатель
 def watch_mode(config):
-    """Режим наблюдения: новые файлы сортируются автоматически. Остановка — Ctrl+C."""
     sources = ask_sources(config)
     if not sources:
         print("Папка не найдена.")
@@ -206,8 +212,8 @@ def watch_mode(config):
                 seen.update(fresh)
                 if fresh:
                     run_session(fresh, sources, config, label=f"Новых файлов: {len(fresh)}. ")
+            
             except Exception as e:
-                # сбой не останавливает наблюдение
                 log_error(f"цикл наблюдения: {e}")
                 print(f"Ошибка цикла (наблюдение продолжается): {e}")
     except KeyboardInterrupt:
@@ -227,7 +233,6 @@ def undo():
 
 
 def cleanup():
-    """Ручная очистка журнала log.txt и/или истории отката history.json."""
     log_path, hist_path = log_mod.LOG_FILE, history_mod.HISTORY_FILE
     log_size = log_path.stat().st_size if log_path.exists() else 0
     sessions = len(history_mod.load_history(hist_path))
