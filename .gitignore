@@ -1,0 +1,18 @@
+# Служебные файлы программы (создаются автоматически при работе)
+rules.json
+history.json
+log.txt
+rules-*.json
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Системные и IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
