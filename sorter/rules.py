@@ -1,4 +1,4 @@
-"""Загрузка/сохранение правил сортировки (rules.json) + шаблон по умолчанию."""
+
 import json
 import sys
 from pathlib import Path
